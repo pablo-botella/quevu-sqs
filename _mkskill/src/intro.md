@@ -6,7 +6,7 @@ mkskill:
 
 # quevu-sqs
 
-Amazon SQS as [quevu](https://github.com/pablo-botella/quevu) components,
+Amazon SQS as [quevu](https://github.com/pablo-botella/quevu-kernel) components,
 in both directions.
 
 > **Not verified against the real service.** It is tested against a

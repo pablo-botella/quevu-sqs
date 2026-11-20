@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.33.20
 	github.com/aws/aws-sdk-go-v2/credentials v1.21.2
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.53.0
-	github.com/pablo-botella/quevu v0.0.0
+	github.com/pablo-botella/quevu-kernel v0.0.0
 )
 
 require (
@@ -24,4 +24,4 @@ require (
 	github.com/aws/smithy-go v1.28.9 // indirect
 )
 
-replace github.com/pablo-botella/quevu => ../quevu
+replace github.com/pablo-botella/quevu-kernel => ../quevu-kernel
