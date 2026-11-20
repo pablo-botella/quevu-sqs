@@ -134,14 +134,14 @@ type log struct {
 
 func (l *log) Write(p []byte) (int, error) { return len(p), nil }
 
-func (l *log) Append(data []byte) (uint64, error) {
+func (l *log) Append(data []byte) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.refuse != "" && string(data) == l.refuse {
-		return 0, errors.New("log closed")
+		return errors.New("log closed")
 	}
 	l.got = append(l.got, string(data))
-	return uint64(len(l.got)), nil
+	return nil
 }
 
 func (l *log) all() []string {
@@ -161,7 +161,7 @@ func wait(t *testing.T, what string, ok func() bool) {
 
 func TestOneChunkOneMessageWithinTheLimitsOfACall(t *testing.T) {
 	q := newQueue()
-	c := &Consumer{api: q, queue: "q", timeout: time.Second}
+	c := &Writer{api: q, queue: "q", timeout: time.Second}
 	var texts []string
 	for i := 0; i < 23; i++ {
 		texts = append(texts, fmt.Sprintf("line %d", i))
@@ -187,7 +187,7 @@ func TestOneChunkOneMessageWithinTheLimitsOfACall(t *testing.T) {
 
 func TestACallNeverCarriesMoreThanTheServiceTakes(t *testing.T) {
 	q := newQueue()
-	c := &Consumer{api: q, queue: "q", timeout: time.Second}
+	c := &Writer{api: q, queue: "q", timeout: time.Second}
 	// Three chunks of 400 KiB do not fit in one call of 1 MiB.
 	big := strings.Repeat("x", 400<<10)
 	if err := c.Write(chunks(big, big, big, "small")); err != nil {
@@ -200,7 +200,7 @@ func TestACallNeverCarriesMoreThanTheServiceTakes(t *testing.T) {
 
 func TestAChunkTooLargeIsLeftOutAndSaid(t *testing.T) {
 	q := newQueue()
-	c := &Consumer{api: q, queue: "q", timeout: time.Second}
+	c := &Writer{api: q, queue: "q", timeout: time.Second}
 	err := c.Write(chunks("before", strings.Repeat("x", MaxMessage+1), "after"))
 	if !errors.Is(err, ErrTooLarge) {
 		t.Fatalf("got %v", err)
@@ -212,7 +212,7 @@ func TestAChunkTooLargeIsLeftOutAndSaid(t *testing.T) {
 
 func TestWhatIsNotTextTravelsEncodedAndComesBackWhole(t *testing.T) {
 	q := newQueue()
-	c := &Consumer{api: q, queue: "q", timeout: time.Second}
+	c := &Writer{api: q, queue: "q", timeout: time.Second}
 	in := []string{"text áñ \U0001f600", "\x00\xff binary", "esc \x1b[31m color", ""}
 	if err := c.Write(chunks(in...)); err != nil {
 		t.Fatal(err)
@@ -235,7 +235,7 @@ func TestWhatIsNotTextTravelsEncodedAndComesBackWhole(t *testing.T) {
 func TestRefusalsByTheServiceAreErrors(t *testing.T) {
 	q := newQueue()
 	q.refuse["bad"] = true
-	c := &Consumer{api: q, queue: "q", timeout: time.Second}
+	c := &Writer{api: q, queue: "q", timeout: time.Second}
 	if err := c.Write(chunks("good", "bad")); err == nil || !strings.Contains(err.Error(), "1 of 2") {
 		t.Fatalf("got %v", err)
 	}
@@ -247,7 +247,7 @@ func TestRefusalsByTheServiceAreErrors(t *testing.T) {
 
 func TestAMessageIsDeletedOnlyAfterTheLogTookIt(t *testing.T) {
 	q := newQueue()
-	c := &Consumer{api: q, queue: "q", timeout: time.Second}
+	c := &Writer{api: q, queue: "q", timeout: time.Second}
 	c.Write(chunks("one", "two", "\x00binary", "four"))
 	var l log
 	s := &Source{api: q, queue: "q", into: &l, wait: 1, pause: 10 * time.Millisecond}
@@ -277,7 +277,7 @@ func TestAMessageIsDeletedOnlyAfterTheLogTookIt(t *testing.T) {
 
 func TestWhatTheLogRefusesStaysInTheQueue(t *testing.T) {
 	q := newQueue()
-	c := &Consumer{api: q, queue: "q", timeout: time.Second}
+	c := &Writer{api: q, queue: "q", timeout: time.Second}
 	c.Write(chunks("one", "two", "three"))
 	l := &log{refuse: "two"}
 	s := &Source{api: q, queue: "q", into: l, wait: 1, pause: 10 * time.Millisecond}
@@ -322,14 +322,14 @@ func TestTheServiceBeingDownIsWaitedOut(t *testing.T) {
 }
 
 func TestConfigIsChecked(t *testing.T) {
-	if _, err := NewConsumer(context.Background(), Config{}); err == nil {
+	if _, err := NewWriter(context.Background(), Config{}); err == nil {
 		t.Fatal("no queue URL accepted")
 	}
 	if _, err := NewSource(context.Background(), Config{QueueURL: "https://example.com/q"}, nil); err == nil {
 		t.Fatal("no log accepted")
 	}
 	// Building a client needs no network and no account.
-	c, err := NewConsumer(context.Background(), Config{
+	c, err := NewWriter(context.Background(), Config{
 		QueueURL: "https://sqs.eu-west-1.amazonaws.com/000000000000/example",
 		Region:   "eu-west-1", AccessKeyID: "EXAMPLE", SecretAccessKey: "example",
 		Endpoint: "http://127.0.0.1:1",

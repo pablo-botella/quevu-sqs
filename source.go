@@ -109,7 +109,7 @@ func (s *Source) take(msgs []types.Message) error {
 	for i, m := range msgs {
 		data, err := decode(m)
 		if err == nil {
-			_, err = s.into.Append(data)
+			err = s.into.Append(data)
 		}
 		if err != nil {
 			// Not deleted: it stays in the queue and comes back.

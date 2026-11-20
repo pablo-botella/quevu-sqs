@@ -4,7 +4,7 @@
     <meta>
       <module>github.com/pablo-botella/quevu-sqs</module>
       <license>MIT</license>
-      <description>Amazon SQS as quevu components for Go, in both directions: a consumer that sends what a log distributes to a queue, and an input that reads a queue and feeds a log. Not yet verified against the real service. Use when working with github.com/pablo-botella/quevu-sqs (package qsqs).</description>
+      <description>Amazon SQS as quevu components for Go, in both directions: a writer that sends what a log distributes to a queue, and an input that reads a queue and feeds a log. Not yet verified against the real service. Use when working with github.com/pablo-botella/quevu-sqs (package qsqs).</description>
     </meta>
   </project>
 </mkskill>

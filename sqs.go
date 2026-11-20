@@ -1,9 +1,9 @@
 // Package qsqs connects quevu to Amazon SQS in both directions.
 //
-//   - Consumer is a consumer of a log (quevu.Consumer): what the log
+//   - Writer is a writer of a hub (quevu.Writer): what the log
 //     distributes is sent to a queue.
 //   - Source is an input (a quevu.Unit): what arrives at a queue is fed
-//     to a log, and follows the normal way to its consumers from there.
+//     to a log, and follows the normal way to its writers from there.
 //
 // The two use the same service, the same credentials and usually the
 // same queue, with different operations: sending is one call, receiving
@@ -159,27 +159,29 @@ func decode(m types.Message) ([]byte, error) {
 	return []byte(body), nil
 }
 
-// Consumer sends the chunks of a log to a queue.
-type Consumer struct {
+// Writer sends the chunks of a log to a queue.
+type Writer struct {
+	fails quevu.Failures // the body of Run, and what it could not write
+
 	api   api
 	queue string
 	// timeout bounds one call to the service.
 	timeout time.Duration
 }
 
-// NewConsumer connects to the queue for sending.
-func NewConsumer(ctx context.Context, cfg Config) (*Consumer, error) {
+// NewWriter connects to the queue for sending.
+func NewWriter(ctx context.Context, cfg Config) (*Writer, error) {
 	a, err := connect(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
-	return &Consumer{api: a, queue: cfg.QueueURL, timeout: 30 * time.Second}, nil
+	return &Writer{api: a, queue: cfg.QueueURL, timeout: 30 * time.Second}, nil
 }
 
 // Write sends a batch, one message per chunk, in as few calls as the
 // limits of the service allow. A chunk too large for a message is left
 // out and reported with ErrTooLarge; the rest are sent.
-func (c *Consumer) Write(batch []quevu.Chunk) error {
+func (c *Writer) Write(batch []quevu.Chunk) error {
 	var errs []error
 	var entries []types.SendMessageBatchRequestEntry
 	size := 0
@@ -213,7 +215,7 @@ func (c *Consumer) Write(batch []quevu.Chunk) error {
 	return errors.Join(errs...)
 }
 
-func (c *Consumer) send(entries []types.SendMessageBatchRequestEntry) error {
+func (c *Writer) send(entries []types.SendMessageBatchRequestEntry) error {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 	out, err := c.api.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{
@@ -232,6 +234,15 @@ func (c *Consumer) send(entries []types.SendMessageBatchRequestEntry) error {
 }
 
 // Close does nothing: the client holds no connection to release.
-func (c *Consumer) Close() error { return nil }
+func (c *Writer) Close() error { return nil }
 
-var _ quevu.Consumer = (*Consumer)(nil)
+var _ quevu.Writer = (*Writer)(nil)
+
+// Run receives from the channel the hub gave this writer until it is
+// closed, writing what arrives in batches, and closes the writer at the
+// end. It is what makes it a quevu.Writer.
+func (c *Writer) Run(in <-chan quevu.Chunk) error { return c.fails.Drain(in, 0, c) }
+
+// Failed returns the chunks lost so far in failed batches, and the last
+// error.
+func (c *Writer) Failed() (uint64, error) { return c.fails.Failed() }

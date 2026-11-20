@@ -7,7 +7,7 @@ mkskill:
 # quevu-sqs - agent notes
 
 Go package `github.com/pablo-botella/quevu-sqs`, imported as `qsqs`:
-`qsqs.Consumer` (a `quevu.Consumer`) and `qsqs.Source` (a `quevu.Unit`
+`qsqs.Writer` (a `quevu.Writer`) and `qsqs.Source` (a `quevu.Unit`
 and `quevu.Exiter` that feeds a `quevu.Intake`). Depends on `quevu` and on
 the AWS SDK for Go v2 (`service/sqs`, `config`, `credentials`), and on no
 other provider's SDK.
