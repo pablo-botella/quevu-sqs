@@ -18,7 +18,7 @@ cfg := qsqs.Config{QueueURL: os.Getenv("ORDERS_QUEUE_URL")} // the rest from the
 
 // Output: a writer of a log.
 out, _ := qsqs.NewWriter(ctx, cfg)
-orders, _ := qhub.New("orders", qhub.WithWriter(out))
+orders, _ := quevu.NewQHub("orders", quevu.WithWriter(out))
 
 // Input: a unit that feeds a log.
 in, _ := qsqs.NewSource(ctx, cfg, incoming)
