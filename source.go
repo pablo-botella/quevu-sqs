@@ -11,14 +11,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
-	"github.com/pablo-botella/quevu"
+	"github.com/pablo-botella/quevu/qkernel"
 )
 
 // Source reads a queue and feeds what arrives to a log.
 type Source struct {
 	api   api
 	queue string
-	into  quevu.Intake
+	into  qkernel.Intake
 	// wait is how long one receive call waits for a message before
 	// coming back empty. The service allows up to twenty seconds.
 	wait int32
@@ -35,7 +35,7 @@ type Source struct {
 
 // NewSource connects to the queue for receiving. into is the log every
 // message is appended to, as one chunk each.
-func NewSource(ctx context.Context, cfg Config, into quevu.Intake) (*Source, error) {
+func NewSource(ctx context.Context, cfg Config, into qkernel.Intake) (*Source, error) {
 	if into == nil {
 		return nil, errors.New("qsqs: no log to feed")
 	}
@@ -165,6 +165,6 @@ func (s *Source) Done() <-chan error {
 func (s *Source) Taken() uint64 { return s.taken.Load() }
 
 var (
-	_ quevu.Unit   = (*Source)(nil)
-	_ quevu.Exiter = (*Source)(nil)
+	_ qkernel.Unit   = (*Source)(nil)
+	_ qkernel.Exiter = (*Source)(nil)
 )

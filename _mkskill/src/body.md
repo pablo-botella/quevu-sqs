@@ -15,7 +15,7 @@ usually the same queue, with different operations:
   comes back.
 
 So receiving is *at least once*. The source deletes a message only after
-the log has accepted it (`quevu.Intake.Append` returned without error).
+the log has accepted it (`qkernel.Intake.Append` returned without error).
 The worst that can happen is that a message arrives twice; it is never
 lost between the queue and the log.
 

@@ -1,8 +1,8 @@
 // Package qsqs connects quevu to Amazon SQS in both directions.
 //
-//   - Writer is a writer of a hub (quevu.Writer): what the log
+//   - Writer is a writer of a hub (qkernel.Writer): what the log
 //     distributes is sent to a queue.
-//   - Source is an input (a quevu.Unit): what arrives at a queue is fed
+//   - Source is an input (a qkernel.Unit): what arrives at a queue is fed
 //     to a log, and follows the normal way to its writers from there.
 //
 // The two use the same service, the same credentials and usually the
@@ -29,7 +29,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
-	"github.com/pablo-botella/quevu"
+	"github.com/pablo-botella/quevu/qkernel"
 )
 
 const (
@@ -123,7 +123,7 @@ func sendable(data []byte) bool {
 
 // encode turns a chunk into a message body and its attributes. Text
 // travels as it is; anything else travels as base64 and says so.
-func encode(c quevu.Chunk) (body string, attrs map[string]types.MessageAttributeValue) {
+func encode(c qkernel.Chunk) (body string, attrs map[string]types.MessageAttributeValue) {
 	attrs = map[string]types.MessageAttributeValue{
 		attrSeq:  {DataType: aws.String("Number"), StringValue: aws.String(strconv.FormatUint(c.Seq, 10))},
 		attrTime: {DataType: aws.String("Number"), StringValue: aws.String(strconv.FormatInt(c.Time.UnixNano(), 10))},
@@ -161,7 +161,7 @@ func decode(m types.Message) ([]byte, error) {
 
 // Writer sends the chunks of a log to a queue.
 type Writer struct {
-	fails quevu.Failures // the body of Run, and what it could not write
+	fails qkernel.Failures // the body of Run, and what it could not write
 
 	api   api
 	queue string
@@ -181,7 +181,7 @@ func NewWriter(ctx context.Context, cfg Config) (*Writer, error) {
 // Write sends a batch, one message per chunk, in as few calls as the
 // limits of the service allow. A chunk too large for a message is left
 // out and reported with ErrTooLarge; the rest are sent.
-func (c *Writer) Write(batch []quevu.Chunk) error {
+func (c *Writer) Write(batch []qkernel.Chunk) error {
 	var errs []error
 	var entries []types.SendMessageBatchRequestEntry
 	size := 0
@@ -236,12 +236,12 @@ func (c *Writer) send(entries []types.SendMessageBatchRequestEntry) error {
 // Close does nothing: the client holds no connection to release.
 func (c *Writer) Close() error { return nil }
 
-var _ quevu.Writer = (*Writer)(nil)
+var _ qkernel.Writer = (*Writer)(nil)
 
 // Run receives from the channel the hub gave this writer until it is
 // closed, writing what arrives in batches, and closes the writer at the
-// end. It is what makes it a quevu.Writer.
-func (c *Writer) Run(in <-chan quevu.Chunk) error { return c.fails.Drain(in, 0, c) }
+// end. It is what makes it a qkernel.Writer.
+func (c *Writer) Run(in <-chan qkernel.Chunk) error { return c.fails.Drain(in, 0, c) }
 
 // Failed returns the chunks lost so far in failed batches, and the last
 // error.

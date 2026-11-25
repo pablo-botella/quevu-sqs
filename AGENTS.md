@@ -1,8 +1,8 @@
 # quevu-sqs - agent notes
 
 Go package `github.com/pablo-botella/quevu-sqs`, imported as `qsqs`:
-`qsqs.Writer` (a `quevu.Writer`) and `qsqs.Source` (a `quevu.Unit`
-and `quevu.Exiter` that feeds a `quevu.Intake`). Depends on `quevu` and on
+`qsqs.Writer` (a `qkernel.Writer`) and `qsqs.Source` (a `qkernel.Unit`
+and `qkernel.Exiter` that feeds a `qkernel.Intake`). Depends on `quevu` and on
 the AWS SDK for Go v2 (`service/sqs`, `config`, `credentials`), and on no
 other provider's SDK.
 
@@ -22,7 +22,7 @@ usually the same queue, with different operations:
   comes back.
 
 So receiving is *at least once*. The source deletes a message only after
-the log has accepted it (`quevu.Intake.Append` returned without error).
+the log has accepted it (`qkernel.Intake.Append` returned without error).
 The worst that can happen is that a message arrives twice; it is never
 lost between the queue and the log.
 

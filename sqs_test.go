@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
-	"github.com/pablo-botella/quevu"
+	"github.com/pablo-botella/quevu/qkernel"
 )
 
 // These tests run against a stand-in for the service that keeps its
@@ -117,10 +117,10 @@ func (q *queue) waiting() int {
 	return len(q.messages)
 }
 
-func chunks(texts ...string) []quevu.Chunk {
-	out := make([]quevu.Chunk, len(texts))
+func chunks(texts ...string) []qkernel.Chunk {
+	out := make([]qkernel.Chunk, len(texts))
 	for i, t := range texts {
-		out[i] = quevu.Chunk{Seq: uint64(i + 1), Time: time.Unix(1700000000, int64(i)), Data: []byte(t)}
+		out[i] = qkernel.Chunk{Seq: uint64(i + 1), Time: time.Unix(1700000000, int64(i)), Data: []byte(t)}
 	}
 	return out
 }
